@@ -10,6 +10,7 @@ namespace OrviboController
     static class Program
     {
         static Controller _controller;
+        private static bool _showDiscoverResponse;
         private static bool _showSubscriptionResponse;
 
         /// <summary>
@@ -185,6 +186,9 @@ namespace OrviboController
         {
             if (!_controller.IsListening)
                 _controller.StartListening();
+
+            _showDiscoverResponse = true;
+
             _controller.SendDiscoveryCommand();
 
             Thread.Sleep(10000);
@@ -253,7 +257,8 @@ namespace OrviboController
 
         private static void _controller_OnFoundNewDevice(object sender, DeviceEventArgs e)
         {
-            Console.WriteLine("Found Device with MAC Address: " + e.Device.MacAddr + ", IP Address: " + e.Device.IpAddr);
+            if (_showDiscoverResponse) 
+                Console.WriteLine("Found Device with MAC Address: " + e.Device.MacAddr + ", IP Address: " + e.Device.IpAddr);
         }
 
         private static void _controller_OnNewResponse(object sender, ResponseEventArgs e)
