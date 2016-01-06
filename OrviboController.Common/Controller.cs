@@ -13,6 +13,7 @@ namespace OrviboController.Common
         private const int RspTimeoutMs = 1000;
         private const int MaxCmdRetries = 5;
 
+
         public event DeviceEventHandler OnFoundNewDevice;
         public event ResponseEventHandler OnNewResponse;
 
@@ -112,7 +113,7 @@ namespace OrviboController.Common
             return true;
         }
 
-        void listener_OnRxNewData(object sender, byte[] data)
+        void listener_OnRxNewData(object sender, IPEndPoint remoteEP, byte[] data)
         {
                 var rsp = Response.ParseResponse(data);
        
@@ -120,7 +121,7 @@ namespace OrviboController.Common
                 {
                     if (OnFoundNewDevice != null)
                     {
-                        var device = ((DiscoveryResponse)rsp).Device;
+                        var device = Device.CreateDevice( remoteEP.Address,  ((DiscoveryResponse)rsp).MacAddress );
                         var eventArgs = new DeviceEventArgs(device);
                         try
                         {

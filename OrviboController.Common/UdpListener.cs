@@ -4,7 +4,7 @@ using System.Net.Sockets;
 
 namespace OrviboController.Common
 {
-    public delegate void DataHandler(object sender, byte[] data);
+    public delegate void DataHandler(object sender, IPEndPoint remoteEP, byte[] data);
 
     public class UdpListener
     {
@@ -18,6 +18,11 @@ namespace OrviboController.Common
         public UdpListener(int port)
         {
             _port = port;
+        }
+
+        public UdpClient Client
+        {
+            get { return _client; }
         }
 
         public bool StartListening()
@@ -53,13 +58,15 @@ namespace OrviboController.Common
 
         private void ReceiveDataCB(IAsyncResult ar)
         {
-            var data = _client.EndReceive(ar, ref _ep);
+            IPEndPoint remoteEP = null;
 
+            var data = _client.EndReceive(ar, ref remoteEP);
+            
             if (OnRxNewData != null)
             {
                 try
                 {
-                    OnRxNewData(this, data);
+                    OnRxNewData(this, remoteEP, data);
                 }
                 catch (Exception e)
                 {

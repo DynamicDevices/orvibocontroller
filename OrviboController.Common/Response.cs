@@ -44,6 +44,8 @@ namespace OrviboController.Common
 
         public static Response ParseResponse(byte[] data)
         {
+            Response rsp = null;
+            var macBytes = new byte[6];
 
             var ms = new MemoryStream(data);
 
@@ -63,21 +65,41 @@ namespace OrviboController.Common
             var cmdIdLow = ms.ReadByte();
             var cmdId = (EnumDeviceCode) (cmdIdHigh * 0x100 + cmdIdLow);
 
-            Debug.WriteLine("Rx: " + cmdId + string.Format(" (0x{0:X})", cmdId));
+            Debug.WriteLine("Rx: " + cmdId + string.Format(" (0x{0:X})", cmdId) + ", Length: " + length);
 
             switch (cmdId)
             {
+                case EnumDeviceCode.Discover :
+
+                    if (length == 0x2A)
+                    {
+                        // Drop padding byte
+                        ms.ReadByte();
+                        
+                        // Get mac address
+                        ms.Read(macBytes, 0, 6);
+                        var srcMacAddr = new PhysicalAddress(macBytes);
+
+                        rsp = new DiscoveryResponse(srcMacAddr);
+
+                        ms.Close();
+                        rsp.Type = EnumResponseType.DiscoveryResponse;
+
+                        return rsp;                    
+                    }
+
+                    return new UnhandledeResponse();
+
                 case EnumDeviceCode.SubscriptionResponse: 
                 case EnumDeviceCode.PowerOnResponse: 
 
                     // Get mac address
-                    var macBytes = new byte[6];
+                    macBytes = new byte[6];
                     ms.Read(macBytes, 0, 6);
                     // Get padding
                     var dummy = new byte[6];
                     ms.Read(dummy, 0, 6);
 
-                    Response rsp = null;
                     int powerState = -1;
 
                     switch (cmdId)
@@ -105,7 +127,6 @@ namespace OrviboController.Common
                     }
 
                     ms.Close();
-
                     rsp.Type = EnumResponseType.SubscriptionResponse;
                     rsp.Data = data;
 
@@ -115,5 +136,6 @@ namespace OrviboController.Common
                     return new UnhandledeResponse();
             }
         }
+
     }
 }

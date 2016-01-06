@@ -39,5 +39,10 @@ namespace OrviboController.Common
         {
             get { return _macAddr; }
         }
+
+        public override string ToString()
+        {
+            return MacAddr + " " + IpAddr;
+        }
     }
 }
