@@ -4,6 +4,8 @@ using OrviboController.Common;
 
 namespace OrviboController.UI
 {
+    delegate void AddDeviceHandler(Device device);
+
     public partial class MainForm : Form
     {
         private readonly Controller _controller;
@@ -23,7 +25,30 @@ namespace OrviboController.UI
             Text += @" v" + version;
 
             _controller = Controller.CreateController(false);
+            _controller.OnFoundNewDevice += _controller_OnFoundNewDevice;
             _controller.OnNewResponse += _controller_OnNewResponse;
+        }
+
+        void AddNewDevice( Device device )
+        {
+            if(InvokeRequired)
+            {
+                Invoke(new AddDeviceHandler(AddNewDevice), new object[] {device});
+                return;
+            }
+
+            foreach (Device d in comboBoxDevices.Items)
+                if (d.MacAddr.ToString() == device.MacAddr.ToString())
+                    return;
+
+            comboBoxDevices.Items.Add(device);
+            if (comboBoxDevices.Items.Count == 1)
+                comboBoxDevices.SelectedIndex = 0;
+        }
+
+        void _controller_OnFoundNewDevice(object sender, DeviceEventArgs e)
+        {
+            AddNewDevice(e.Device);
         }
 
         void _controller_OnNewResponse(object sender, ResponseEventArgs e)
@@ -82,24 +107,35 @@ namespace OrviboController.UI
             toolStripStatusLabel1.Text = @"Querying";
             Application.DoEvents();
 
-            if (checkBoxManual.Checked)
-            {
-                if (!_controller.IsListening)
-                    _controller.StartListening();
+            if (!_controller.IsListening)
+                _controller.StartListening();
 
-                try
+            try
+            {
+
+                Device device = null;
+
+                if (checkBoxManual.Checked)
                 {
                     var ipAddress = textBoxIPAddress.Text;
                     var macAddress = textBoxMACAddress.Text;
 
-                    var device = Device.CreateDevice(ipAddress, macAddress);
-
-                    success = DoQuery(device);
+                    device = Device.CreateDevice(ipAddress, macAddress);
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show(@"Exception: " + ex.Message);
+                    if (comboBoxDevices.SelectedIndex < 0)
+                        return;
+
+                    device = (Device) comboBoxDevices.SelectedItem;
                 }
+
+                success = DoQuery(device);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(@"Exception: " + ex.Message);
             }
 
             toolStripStatusLabel1.Text = success ? "OK" : "ERROR";
@@ -111,24 +147,34 @@ namespace OrviboController.UI
             toolStripStatusLabel1.Text = @"Setting On";
             Application.DoEvents();
 
-            if (checkBoxManual.Checked)
-            {
-                if (!_controller.IsListening)
-                    _controller.StartListening();
+            if (!_controller.IsListening)
+                _controller.StartListening();
 
-                try
+            try
+            {
+
+                Device device = null;
+
+                if (checkBoxManual.Checked)
                 {
                     var ipAddress = textBoxIPAddress.Text;
                     var macAddress = textBoxMACAddress.Text;
 
-                    var device = Device.CreateDevice(ipAddress, macAddress);
-
-                    success = DoControlPower(device, true);
+                    device = Device.CreateDevice(ipAddress, macAddress);
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show(@"Exception: " + ex.Message);
+                    if (comboBoxDevices.SelectedIndex < 0)
+                        return;
+
+                    device = (Device)comboBoxDevices.SelectedItem;
                 }
+
+                success = DoControlPower(device, true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(@"Exception: " + ex.Message);
             }
 
             toolStripStatusLabel1.Text = success ? "OK" : "ERROR";
@@ -140,23 +186,34 @@ namespace OrviboController.UI
             toolStripStatusLabel1.Text = @"Setting Off";
             Application.DoEvents();
 
-            if (checkBoxManual.Checked)
-            {
-                if (!_controller.IsListening)
-                    _controller.StartListening();
+            if (!_controller.IsListening)
+                _controller.StartListening();
 
-                try
+            try
+            {
+
+                Device device = null;
+
+                if (checkBoxManual.Checked)
                 {
                     var ipAddress = textBoxIPAddress.Text;
                     var macAddress = textBoxMACAddress.Text;
-                    var device = Device.CreateDevice(ipAddress, macAddress);
 
-                    success = DoControlPower(device, false);
+                    device = Device.CreateDevice(ipAddress, macAddress);
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show(@"Exception: " + ex.Message);
+                    if (comboBoxDevices.SelectedIndex < 0)
+                        return;
+
+                    device = (Device)comboBoxDevices.SelectedItem;
                 }
+
+                success = DoControlPower(device, false);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(@"Exception: " + ex.Message);
             }
 
             toolStripStatusLabel1.Text = success ? "OK" : "ERROR";
@@ -192,7 +249,6 @@ namespace OrviboController.UI
         private void MainFormLoad(object sender, EventArgs e)
         {
             // Setup UI
-            checkBoxManual.Checked = true;
             checkBoxCycle.Checked = false;
             CheckBoxManualCheckedChanged(this, null);
             CheckBoxCycleCheckedChanged(this, null);

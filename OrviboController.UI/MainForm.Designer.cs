@@ -87,7 +87,7 @@
             this.buttonFindDevices.Name = "buttonFindDevices";
             this.buttonFindDevices.Size = new System.Drawing.Size(196, 23);
             this.buttonFindDevices.TabIndex = 2;
-            this.buttonFindDevices.Text = "Find Devices (tbd)";
+            this.buttonFindDevices.Text = "Find Devices";
             this.buttonFindDevices.UseVisualStyleBackColor = true;
             this.buttonFindDevices.Click += new System.EventHandler(this.ButtonFindDevicesClick);
             // 
