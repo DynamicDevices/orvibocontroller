@@ -128,14 +128,33 @@ namespace OrviboController
                         {
                             var macAddr = PhysicalAddress.Parse(args[1]);
                             var ipAddr = IPAddress.Parse(args[2]);
-                            var ontimeS = int.Parse(args[3]);
-                            var offtimeS = int.Parse(args[4]);
+
+                            int ontimeS;
+                            var onrandom = false;
+                            if (args[3].ToLower().EndsWith("r"))
+                            {
+                                ontimeS = int.Parse(args[3].Replace("r", ""));
+                                onrandom = true;
+                            }
+                            else
+                                ontimeS = int.Parse(args[3]);
+
+                            int offtimeS;
+                            var offrandom = false;
+                            if (args[4].ToLower().EndsWith("r"))
+                            {
+                                offtimeS = int.Parse(args[4].Replace("r", ""));
+                                offrandom = true;
+                            }
+                            else
+                                offtimeS = int.Parse(args[4]);
+
                             var cycleCount = 0;
                             if (args.Length == 6)
                                 cycleCount = int.Parse(args[5]);
 
                             SetupController();
-                            DoCycle(macAddr, ipAddr, ontimeS, offtimeS, cycleCount);
+                            DoCycle(macAddr, ipAddr, ontimeS, onrandom, offtimeS, offrandom, cycleCount);
                         }
                         catch (Exception e)
                         {
@@ -168,8 +187,9 @@ namespace OrviboController
                 Console.WriteLine("   - sets current state to ON for device with given mac/IP");
                 Console.WriteLine("  setoff macaddr ipaddr");
                 Console.WriteLine("   - sets current state to OFF for device with given mac/IP");
-                Console.WriteLine("  cycle macaddr ipaddr ontimesecs offtimesecs [cycles]");
+                Console.WriteLine("  cycle macaddr ipaddr ontimesecs[r] offtimesecs[r] [cycles]");
                 Console.WriteLine("   - cycle device on/off for given intervals in seconds, for a given number of cycles (or infinite)");
+                Console.WriteLine("   - appending 'r' to the on/off-time sets a random time within the limit");
             }
         }
 
@@ -227,10 +247,11 @@ namespace OrviboController
             return success;
         }
 
-        private static bool DoCycle(PhysicalAddress macAddress, IPAddress ipAddress, int onTimeS, int offTimeS, int cycleCount)
+        private static bool DoCycle(PhysicalAddress macAddress, IPAddress ipAddress, int onTimeS, bool onrandom, int offTimeS, bool offrandom, int cycleCount)
         {
             var loop = cycleCount == 0;
             var iteration = 1;
+            int waitTime;
 
             do
             {
@@ -239,14 +260,18 @@ namespace OrviboController
                 Console.WriteLine(" - set on");
                 DoSet(macAddress, ipAddress, true);
 
-                Console.WriteLine(" - wait " + onTimeS + " secs");
-                Thread.Sleep(onTimeS * 1000);
+                waitTime = onrandom ? new Random().Next(onTimeS) : onTimeS;
+
+                Console.WriteLine(" - wait " + waitTime + " secs");
+                Thread.Sleep(waitTime * 1000);
 
                 Console.WriteLine(" - set off");
                 DoSet(macAddress, ipAddress, false);
 
-                Console.WriteLine(" - wait " + offTimeS + " secs");
-                Thread.Sleep(offTimeS * 1000);
+                waitTime = offrandom ? new Random().Next(offTimeS) : offTimeS;
+
+                Console.WriteLine(" - wait " + waitTime + " secs");
+                Thread.Sleep(waitTime*1000);
 
             } while (((iteration++ < cycleCount) || loop) && !Console.KeyAvailable);
 
